@@ -20,7 +20,7 @@ if(exists("TCGA_OV_COUNTS_DF")){
 # Building combined table
 for (i in count_filenames) {
   # Reading file 
-  print(paste0("Adding ", i))
+  print(paste0("Adding ", i, "  == ", round(match(i, count_filenames)*100/length(count_filenames), 2), "%"))
   file_path <- paste("./data/RNAseq/read_counts/", i, sep = "")
   input_df <- read.delim(file_path, header = F)
   
@@ -48,12 +48,12 @@ TCGA_OV_COUNTS_DF$ENSEMBL_ID <- TCGA_OV_COUNTS_DF$ENSEMBL_ID %>%
               replacement = "") 
 
 # Saving count df
-write_delim(TCGA_OV_COUNTS_DF, path = "./data/RNAseq/combined_count_data/TCGA_OV_COUNTS_DF.txt")
+write_delim(TCGA_OV_COUNTS_DF, file = "./data/RNAseq/combined_count_data/TCGA_OV_COUNTS_DF.txt")
 
 # Conducting TMM normalisation
 source(file = "scripts/edgeR_TMM_count_normalisation.R")
 # Saving count df
-write_delim(TCGA_OV_CPM_DF, path = "./data/RNAseq/combined_count_data/TCGA_OV_TMM_CPM_DF.txt")
+write_delim(TCGA_OV_CPM_DF, file = "./data/RNAseq/combined_count_data/TCGA_OV_TMM_CPM_DF.txt")
 
 # Creating annotation DF
 # 1. Convert from ensembl.gene to gene.symbol
@@ -62,9 +62,11 @@ ensembl <- TCGA_OV_COUNTS_DF$ENSEMBL_ID %>% as.character()
 library(EnsDb.Hsapiens.v79)
 GENE_ANNOT_DF <- ensembldb::select(EnsDb.Hsapiens.v79, keys= ensembl, keytype = "GENEID", columns = c("SYMBOL","GENEID"))
 # Saving annot df
-write_delim(GENE_ANNOT_DF, path = "./data/RNAseq/combined_count_data/GENE_ANNOT_DF.txt")
+write_delim(GENE_ANNOT_DF, file = "./data/RNAseq/combined_count_data/GENE_ANNOT_DF.txt")
 
 
 # Saving Rdata
-save(TCGA_OV_COUNTS_DF, TCGA_OV_CPM_DF, GENE_ANNOT_DF, ID_REF_TABLE,  file = "./data/RNAseq/combined_count_data/TCGA_OV_RNAseq.RData")
+TCGA_OV_CLINICAL_DF <- clinical
+write_delim(TCGA_OV_CLINICAL_DF, file = "./data/RNAseq/combined_count_data/TCGA_OV_CLINICAL_DF.txt")
+save(TCGA_OV_COUNTS_DF, TCGA_OV_CPM_DF, GENE_ANNOT_DF, ID_REF_TABLE, TCGA_OV_CLINICAL_DF,  file = "./data/RNAseq/combined_count_data/TCGA_OV_RNAseq.RData")
 
