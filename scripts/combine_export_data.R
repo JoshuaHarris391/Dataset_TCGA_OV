@@ -1,15 +1,12 @@
 # Setting wd
 # setwd("~/Dropbox/Research/PhD/Bioinformatics/Datasets/Dataset_TCGA_BRCA/data/RNAseq")
 library(tidyverse)
-# getting list of files 
-system("ls -1 ./data/RNAseq/read_counts > ./data/RNAseq/count_filenames.txt")
-
-# loading list of files
-count_filenames <- read.delim("./data/RNAseq/count_filenames.txt", header = F)
-count_filenames <- count_filenames$V1 %>% as.character()
-
-# Getting sample names
-count_sample_names <- gsub(".htseq.counts.txt", "", count_filenames)
+# Loading sample_sheet
+TCGA_OV_SAMPLE_INFO <- read.csv(file = "data/clinical/gdc_sample_sheet.2021-12-03.tsv", sep = "\t", header = T)
+# renaming sample_id to case_submitter_id
+colnames(TCGA_OV_SAMPLE_INFO)[6] <- "case_submitter_id"
+# changing .gz to .txt
+TCGA_OV_SAMPLE_INFO$File.Name <- gsub(".gz", ".txt", TCGA_OV_SAMPLE_INFO$File.Name)
 
 # Removing dataframe 
 if(exists("TCGA_OV_COUNTS_DF")){
@@ -18,9 +15,9 @@ if(exists("TCGA_OV_COUNTS_DF")){
 
 
 # Building combined table
-for (i in count_filenames) {
+for (i in TCGA_OV_SAMPLE_INFO$File.Name) {
   # Reading file 
-  print(paste0("Adding ", i, "  == ", round(match(i, count_filenames)*100/length(count_filenames), 2), "%"))
+  print(paste0("Adding ", i, "  == ", round(match(i, TCGA_OV_SAMPLE_INFO$File.Name)*100/length(TCGA_OV_SAMPLE_INFO$File.Name), 2), "%"))
   file_path <- paste("./data/RNAseq/read_counts/", i, sep = "")
   input_df <- read.delim(file_path, header = F)
   
@@ -32,16 +29,11 @@ for (i in count_filenames) {
 }
 
 # Creating sample reference table
-ID <- seq(1, length(count_sample_names)) %>% as.character()
-ID <- paste0("ID_", ID)
-CASE_ID <- count_sample_names
-FILENAME <- count_filenames
-ID_REF_TABLE <- data.frame(ID, CASE_ID, FILENAME)
 dir.create("./data/RNAseq/combined_count_data/", recursive = T, showWarnings = F)
-write_delim(ID_REF_TABLE, file = "./data/RNAseq/combined_count_data/ID_REF_TABLE.txt")
+write_delim(TCGA_OV_SAMPLE_INFO, file = "./data/RNAseq/combined_count_data/TCGA_OV_SAMPLE_INFO.txt")
 
 # Renaming columns
-colnames(TCGA_OV_COUNTS_DF) <- c("ENSEMBL_ID", count_sample_names)
+colnames(TCGA_OV_COUNTS_DF) <- c("ENSEMBL_ID", TCGA_OV_SAMPLE_INFO$case_submitter_id)
 # Removing version numbers from ENSEMBL IDs
 TCGA_OV_COUNTS_DF$ENSEMBL_ID <- TCGA_OV_COUNTS_DF$ENSEMBL_ID %>%  
   str_replace(pattern = ".[0-9]+$",
@@ -60,13 +52,14 @@ write_delim(TCGA_OV_CPM_DF, file = "./data/RNAseq/combined_count_data/TCGA_OV_TM
 ensembl <- TCGA_OV_COUNTS_DF$ENSEMBL_ID %>% as.character()
 # Creating DF for gene names matched with ensemble IDs
 library(EnsDb.Hsapiens.v79)
-GENE_ANNOT_DF <- ensembldb::select(EnsDb.Hsapiens.v79, keys= ensembl, keytype = "GENEID", columns = c("SYMBOL","GENEID"))
+TCGA_OV_GENE_ANNOT <- ensembldb::select(EnsDb.Hsapiens.v79, keys= ensembl, keytype = "GENEID", columns = c("SYMBOL","GENEID"))
 # Saving annot df
-write_delim(GENE_ANNOT_DF, file = "./data/RNAseq/combined_count_data/GENE_ANNOT_DF.txt")
+write_delim(TCGA_OV_GENE_ANNOT, file = "./data/RNAseq/combined_count_data/TCGA_OV_GENE_ANNOT.txt")
 
-
-# Saving Rdata
+# writing clinical df
 TCGA_OV_CLINICAL_DF <- clinical
 write_delim(TCGA_OV_CLINICAL_DF, file = "./data/RNAseq/combined_count_data/TCGA_OV_CLINICAL_DF.txt")
-save(TCGA_OV_COUNTS_DF, TCGA_OV_CPM_DF, GENE_ANNOT_DF, ID_REF_TABLE, TCGA_OV_CLINICAL_DF,  file = "./data/RNAseq/combined_count_data/TCGA_OV_RNAseq.RData")
+
+# Saving Rdata
+save(TCGA_OV_COUNTS_DF, TCGA_OV_CPM_DF, TCGA_OV_GENE_ANNOT, TCGA_OV_SAMPLE_INFO, TCGA_OV_CLINICAL_DF,  file = "./data/RNAseq/combined_count_data/TCGA_OV_RNAseq.RData")
 

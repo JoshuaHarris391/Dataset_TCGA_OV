@@ -1,6 +1,6 @@
 # Importing clinical info
 library(tidyverse)
-clinical <- read.csv(file = "data/clinical/clinical.cases_selection.2021-12-02/clinical.tsv", sep = "\t", header = T)
+clinical <- read.csv(file = "data/clinical/clinical.cart.2021-12-03/clinical.tsv", sep = "\t", header = T)
 # Converting '-- to na
 clinical <- lapply(clinical, function(x){gsub(pattern = "\'--", replacement = NA, x)} ) %>% as.data.frame()
 
@@ -26,3 +26,9 @@ clinical$age_at_diagnosis <- (clinical$age_at_diagnosis/365) %>% round(digits = 
 clinical$os_event <- ifelse(clinical$vital_status == "Alive", 0, 
                             ifelse(clinical$vital_status == "Dead", 1, NA)) %>% as.integer()
 clinical$os_time <- clinical$days_to_last_follow_up
+
+# Removing duplicates
+clinical <- clinical[!duplicated(clinical$case_submitter_id), ]
+
+
+
