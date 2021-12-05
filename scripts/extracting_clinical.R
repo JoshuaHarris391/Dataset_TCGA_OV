@@ -30,5 +30,7 @@ clinical$os_time <- clinical$days_to_last_follow_up
 # Removing duplicates
 clinical <- clinical[!duplicated(clinical$case_submitter_id), ]
 
-
+# Removing columns with all NAs
+na_cols <- apply(clinical, 2, function(x){sum(is.na(x)) == length(x)})
+clinical <- clinical[, !na_cols]
 

@@ -1,3 +1,6 @@
+# Removing current data
+rm(list = ls())
+library(tidyverse)
 # Processing Clinical data
 source(file = "scripts/extracting_clinical.R")
 # Downloading RNAseq data
